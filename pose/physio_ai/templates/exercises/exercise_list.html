@@ -1,0 +1,37 @@
+{% extends "base_premium.html" %}
+
+{% block title %}Exercises | Physio AI{% endblock %}
+
+{% block content %}
+<header class="glass-card mb-6 rounded-[30px] px-6 py-5" data-reveal>
+    <p class="mb-2 text-xs font-semibold uppercase tracking-[0.35em] text-cyan-200/65">Exercise Library</p>
+    <h1 class="text-3xl font-semibold tracking-tight text-white sm:text-4xl">Therapy Exercises</h1>
+    <p class="mt-2 max-w-3xl text-sm text-slate-300">Browse active exercise templates, difficulty levels, and movement instructions.</p>
+</header>
+
+{% if exercises %}
+    <section class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {% for exercise in exercises %}
+            <article class="glass-card rounded-[28px] p-5" data-reveal>
+                <div class="flex items-start justify-between gap-4">
+                    <div>
+                        <h2 class="text-xl font-semibold text-white">{{ exercise.name }}</h2>
+                        <p class="mt-2 text-sm leading-7 text-slate-300">{{ exercise.description }}</p>
+                    </div>
+                    <span class="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-100">{{ exercise.difficulty_level }}</span>
+                </div>
+                <div class="mt-4 grid gap-2 text-sm text-slate-300">
+                    <div>Duration <span class="font-semibold text-white">{{ exercise.duration_seconds }} sec</span></div>
+                    <div>Muscles <span class="font-semibold text-white">{{ exercise.muscle_groups }}</span></div>
+                </div>
+                <a href="/exercises/{{ exercise.id }}/" class="mt-5 inline-flex rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-2 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-300/20">Open details</a>
+            </article>
+        {% endfor %}
+    </section>
+{% else %}
+    <section class="glass-card rounded-[30px] p-8 text-center" data-reveal>
+        <h2 class="text-2xl font-semibold text-white">No Exercises Available</h2>
+        <p class="mt-3 text-slate-300">Exercises will appear here once the library is populated.</p>
+    </section>
+{% endif %}
+{% endblock %}

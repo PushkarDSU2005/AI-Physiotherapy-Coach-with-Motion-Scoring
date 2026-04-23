@@ -1,0 +1,37 @@
+{% extends "base_premium.html" %}
+
+{% block title %}Sessions | Physio AI{% endblock %}
+
+{% block content %}
+<header class="glass-card mb-6 rounded-[30px] px-6 py-5" data-reveal>
+    <p class="mb-2 text-xs font-semibold uppercase tracking-[0.35em] text-cyan-200/65">Recovery Sessions</p>
+    <h1 class="text-3xl font-semibold tracking-tight text-white sm:text-4xl">Training Sessions</h1>
+    <p class="mt-2 max-w-3xl text-sm text-slate-300">Track and manage the sessions assigned to the current user.</p>
+</header>
+
+{% if sessions %}
+    <section class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {% for session in sessions %}
+            <article class="glass-card rounded-[28px] p-5" data-reveal>
+                <div class="flex items-start justify-between gap-4">
+                    <div>
+                        <h2 class="text-xl font-semibold text-white">{{ session.title }}</h2>
+                        <p class="mt-2 text-sm text-slate-300">{{ session.description|default:"No description provided." }}</p>
+                    </div>
+                    <span class="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-100">{{ session.status }}</span>
+                </div>
+                <div class="mt-5 grid gap-2 text-sm text-slate-300">
+                    <div>Start <span class="font-semibold text-white">{{ session.start_time }}</span></div>
+                    <div>Duration <span class="font-semibold text-white">{{ session.duration_minutes|default:"-" }} min</span></div>
+                </div>
+                <a href="/sessions/{{ session.id }}/" class="mt-5 inline-flex rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-2 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-300/20">View session</a>
+            </article>
+        {% endfor %}
+    </section>
+{% else %}
+    <section class="glass-card rounded-[30px] p-8 text-center" data-reveal>
+        <h2 class="text-2xl font-semibold text-white">No Sessions Yet</h2>
+        <p class="mt-3 text-slate-300">Start your first training session to see it here.</p>
+    </section>
+{% endif %}
+{% endblock %}

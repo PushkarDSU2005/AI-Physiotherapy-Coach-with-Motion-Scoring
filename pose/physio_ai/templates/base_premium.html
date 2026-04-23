@@ -1,0 +1,318 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Physio AI{% endblock %}</title>
+    <meta name="description" content="{% block meta_description %}Premium AI physiotherapy experience with live pose coaching, analytics, and therapy planning.{% endblock %}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script type="module" src="https://unpkg.com/@splinetool/viewer@1.12.87/build/spline-viewer.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Sora', 'system-ui', 'sans-serif'],
+                    },
+                    colors: {
+                        shell: '#07111c',
+                        mint: '#79f0cb',
+                        skyglass: '#8ab7ff',
+                        peachglass: '#ffc88a',
+                        roseglass: '#ff8ea8',
+                    },
+                },
+            },
+        };
+    </script>
+    <style>
+        :root {
+            color-scheme: dark;
+            --bg-card: rgba(11, 23, 40, 0.7);
+            --bg-card-strong: rgba(14, 27, 43, 0.82);
+            --border: rgba(255, 255, 255, 0.08);
+            --border-strong: rgba(255, 255, 255, 0.14);
+            --text: #edf5ff;
+            --muted: #b7c6d9;
+            --soft: #8ca3bf;
+            --accent: #79f0cb;
+            --accent-2: #8ab7ff;
+            --accent-3: #ffc88a;
+            --shadow: 0 24px 80px rgba(0, 0, 0, 0.34);
+            --radius-xl: 32px;
+            --radius-lg: 24px;
+            --radius-md: 18px;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            margin: 0;
+            font-family: "Sora", system-ui, sans-serif;
+            color: var(--text);
+            background:
+                radial-gradient(circle at top left, rgba(121, 240, 203, 0.12), transparent 28%),
+                radial-gradient(circle at top right, rgba(138, 183, 255, 0.14), transparent 24%),
+                linear-gradient(160deg, #040a12 0%, #07111c 42%, #0b1625 100%);
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            background:
+                linear-gradient(180deg, rgba(4, 10, 18, 0.44), rgba(4, 10, 18, 0.76)),
+                radial-gradient(circle at center, rgba(4, 10, 18, 0.06), rgba(4, 10, 18, 0.34));
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        #logo {
+            visibility: hidden;
+        }
+
+        .spline-shell {
+            position: fixed;
+            inset: 0;
+            z-index: -3;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .spline-shell::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(circle at 25% 18%, rgba(121, 240, 203, 0.12), transparent 28%),
+                linear-gradient(180deg, rgba(6, 12, 21, 0.24), rgba(6, 12, 21, 0.54));
+            pointer-events: none;
+        }
+
+        .spline-shell spline-viewer {
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            transform: scale(1.04);
+            filter: saturate(1.05) contrast(1.04);
+            transition: opacity 1.4s ease, transform 1.6s ease;
+            pointer-events: none;
+            will-change: opacity, transform;
+        }
+
+        body.spline-visible .spline-shell spline-viewer {
+            visibility: visible !important;
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .page-shell {
+            position: relative;
+            z-index: 1;
+        }
+
+        .glass-card {
+            background: linear-gradient(180deg, rgba(16, 31, 51, 0.68), rgba(9, 19, 31, 0.54));
+            border: 1px solid var(--border);
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(22px);
+            transition: transform 220ms ease, border-color 220ms ease, background 220ms ease, box-shadow 220ms ease;
+        }
+
+        .glass-card:hover {
+            transform: translateY(-3px);
+            border-color: var(--border-strong);
+            background: linear-gradient(180deg, rgba(18, 35, 56, 0.78), rgba(11, 22, 36, 0.6));
+            box-shadow: 0 28px 100px rgba(0, 0, 0, 0.38);
+        }
+
+        .topbar {
+            position: sticky;
+            top: 0;
+            z-index: 20;
+            padding: 1rem 0;
+            backdrop-filter: blur(16px);
+            background: linear-gradient(180deg, rgba(7, 17, 28, 0.76), rgba(7, 17, 28, 0.18));
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .brand-badge {
+            width: 2.55rem;
+            height: 2.55rem;
+            border-radius: 999px;
+            display: grid;
+            place-items: center;
+            color: #031018;
+            background: linear-gradient(135deg, var(--accent), var(--accent-2));
+            box-shadow: 0 12px 34px rgba(121, 240, 203, 0.24);
+        }
+
+        .nav-chip {
+            text-decoration: none;
+            color: var(--muted);
+            transition: color 180ms ease, transform 180ms ease, background 180ms ease;
+        }
+
+        .nav-chip:hover {
+            color: var(--text);
+            transform: translateY(-1px);
+        }
+
+        .nav-chip.cta {
+            color: #031018;
+            background: linear-gradient(135deg, var(--accent), var(--accent-3));
+            box-shadow: 0 18px 44px rgba(121, 240, 203, 0.22);
+        }
+
+        .eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.65rem;
+            padding: 0.6rem 0.9rem;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(121, 240, 203, 0.16);
+            color: var(--muted);
+            font-size: 0.84rem;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+        }
+
+        .eyebrow-dot {
+            width: 0.58rem;
+            height: 0.58rem;
+            border-radius: 50%;
+            background: var(--accent);
+            box-shadow: 0 0 0 0 rgba(121, 240, 203, 0.4);
+            animation: pulse 2.2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(121, 240, 203, 0.38); }
+            70% { box-shadow: 0 0 0 0.75rem rgba(121, 240, 203, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(121, 240, 203, 0); }
+        }
+
+        [data-reveal] {
+            opacity: 0;
+            transform: translateY(18px);
+            transition: opacity 700ms ease, transform 700ms ease;
+        }
+
+        [data-reveal].is-visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        @media (max-width: 760px) {
+            .topbar-inner {
+                align-items: flex-start !important;
+                flex-direction: column;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            html { scroll-behavior: auto; }
+            *,
+            *::before,
+            *::after {
+                animation: none !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+    </style>
+    {% block head_extra %}{% endblock %}
+</head>
+<body class="{% block body_class %}min-h-screen font-sans{% endblock %}">
+    <div class="spline-shell" aria-hidden="true">
+        <spline-viewer id="logo" url="https://prod.spline.design/T3BThUvHm1pEuubo/scene.splinecode"></spline-viewer>
+    </div>
+
+    <div class="page-shell">
+        <header class="topbar">
+            <div class="mx-auto flex w-[min(calc(100%-2rem),1600px)] items-center justify-between gap-4 px-4 py-1 sm:px-6 lg:px-8 topbar-inner">
+                <a href="/" class="inline-flex items-center gap-3 text-white no-underline">
+                    <span class="brand-badge font-bold">P</span>
+                    <span class="text-sm font-bold uppercase tracking-[0.22em]">Physio AI</span>
+                </a>
+                <nav class="flex flex-wrap items-center gap-2 text-sm" aria-label="Primary">
+                    <a class="nav-chip rounded-full px-4 py-2" href="/">Home</a>
+                    <a class="nav-chip rounded-full px-4 py-2" href="/users/dashboard/">Dashboard</a>
+                    <a class="nav-chip rounded-full px-4 py-2" href="/analytics/">Analytics</a>
+                    <a class="nav-chip rounded-full px-4 py-2" href="/therapy/">Therapy</a>
+                    <a class="nav-chip rounded-full px-4 py-2" href="/sessions/">Sessions</a>
+                    <a class="nav-chip rounded-full px-4 py-2" href="/exercises/">Exercises</a>
+                    <a class="nav-chip rounded-full px-4 py-2" href="/ai/">AI</a>
+                    <a class="nav-chip cta rounded-full px-4 py-2 font-semibold" href="/sessions/capture-demo-live/">Live Camera</a>
+                </nav>
+            </div>
+        </header>
+
+        <main class="{% block shell_classes %}mx-auto max-w-[1600px] px-4 py-6 sm:px-6 lg:px-8{% endblock %}">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    <script>
+        (function () {
+            const body = document.body;
+            const spline = document.getElementById("logo");
+
+            function revealSpline() {
+                if (!spline) {
+                    return;
+                }
+                body.classList.add("spline-visible");
+            }
+
+            function scheduleSplineReveal() {
+                const reveal = function () {
+                    window.setTimeout(revealSpline, 380);
+                };
+
+                if ("requestIdleCallback" in window) {
+                    requestIdleCallback(reveal, { timeout: 1200 });
+                    return;
+                }
+
+                window.setTimeout(reveal, 520);
+            }
+
+            if (document.readyState === "complete") {
+                scheduleSplineReveal();
+            } else {
+                window.addEventListener("load", scheduleSplineReveal, { once: true });
+            }
+
+            const revealItems = document.querySelectorAll("[data-reveal]");
+            if ("IntersectionObserver" in window && revealItems.length) {
+                const observer = new IntersectionObserver((entries, instance) => {
+                    entries.forEach((entry) => {
+                        if (!entry.isIntersecting) {
+                            return;
+                        }
+                        entry.target.classList.add("is-visible");
+                        instance.unobserve(entry.target);
+                    });
+                }, {
+                    threshold: 0.14,
+                    rootMargin: "0px 0px -8% 0px"
+                });
+
+                revealItems.forEach((item) => observer.observe(item));
+            } else {
+                revealItems.forEach((item) => item.classList.add("is-visible"));
+            }
+        })();
+    </script>
+    {% block body_scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,222 @@
+{% extends "base_premium.html" %}
+{% load static %}
+
+{% block title %}Dashboard | Physio AI{% endblock %}
+
+{% block head_extra %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+    .heat-dot.excellent { background: rgba(69, 219, 191, 0.85); }
+    .heat-dot.good { background: rgba(255, 187, 115, 0.85); }
+    .heat-dot.warning { background: rgba(255, 111, 145, 0.85); }
+</style>
+{% endblock %}
+
+{% block content %}
+<header class="glass-card mb-6 rounded-[30px] px-6 py-5" data-reveal>
+    <div class="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+            <p class="mb-2 text-xs font-semibold uppercase tracking-[0.35em] text-cyan-200/65">Performance Command Center</p>
+            <h1 class="text-3xl font-semibold tracking-tight text-white sm:text-4xl">AI Physiotherapy Dashboard</h1>
+            <p class="mt-2 max-w-3xl text-sm text-slate-300">
+                Live recovery insights, weakness analysis, session trends, and progression recommendations for
+                <span class="font-semibold text-white">{{ user.name }}</span>.
+            </p>
+        </div>
+        <div class="flex flex-wrap gap-3">
+            <a href="{% url 'sessions:pose_capture_demo_live' %}" class="rounded-full border border-mint/30 bg-mint/10 px-5 py-3 text-sm font-semibold text-mint transition hover:bg-mint/20">
+                Open Live Camera
+            </a>
+            <a href="{% url 'therapy_plans:index' %}" class="rounded-full border border-white/10 bg-white/5 px-5 py-3 text-sm font-semibold text-slate-100 transition hover:bg-white/10">
+                Therapy Plans
+            </a>
+        </div>
+    </div>
+</header>
+
+<section class="glass-card mb-6 rounded-[28px] p-5" data-reveal>
+    <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+            <p class="text-xs uppercase tracking-[0.25em] text-cyan-200/60">AI Alert</p>
+            <h2 class="mt-1 text-2xl font-semibold text-white">{{ hero_alert.title }}</h2>
+            <p class="mt-2 max-w-3xl text-sm text-slate-300">{{ hero_alert.message }}</p>
+        </div>
+        <div class="rounded-[22px] border border-white/10 bg-white/5 px-5 py-4">
+            <div class="text-xs uppercase tracking-[0.2em] text-slate-400">Risk trend</div>
+            <div class="mt-2 text-3xl font-semibold text-white">{{ summary.risk_trend|upper }}</div>
+        </div>
+    </div>
+</section>
+
+<section class="grid gap-6 xl:grid-cols-[1.55fr_0.95fr]">
+    <div class="space-y-6">
+        <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <article class="glass-card rounded-[28px] p-5" data-reveal>
+                <p class="text-xs uppercase tracking-[0.25em] text-slate-400">Average Score</p>
+                <p class="mt-3 text-4xl font-semibold text-white">{{ summary.average_score }}</p>
+                <p class="mt-2 text-sm text-slate-300">Live form quality across recorded exercise blocks.</p>
+            </article>
+            <article class="glass-card rounded-[28px] p-5" data-reveal>
+                <p class="text-xs uppercase tracking-[0.25em] text-slate-400">Best Score</p>
+                <p class="mt-3 text-4xl font-semibold text-white">{{ summary.best_score }}</p>
+                <p class="mt-2 text-sm text-slate-300">Your strongest recorded execution so far.</p>
+            </article>
+            <article class="glass-card rounded-[28px] p-5" data-reveal>
+                <p class="text-xs uppercase tracking-[0.25em] text-slate-400">Sessions</p>
+                <p class="mt-3 text-4xl font-semibold text-white">{{ summary.total_sessions }}</p>
+                <p class="mt-2 text-sm text-slate-300">Tracked rehab sessions across the platform.</p>
+            </article>
+            <article class="glass-card rounded-[28px] p-5" data-reveal>
+                <p class="text-xs uppercase tracking-[0.25em] text-slate-400">Streak</p>
+                <p class="mt-3 text-4xl font-semibold text-white">{{ summary.streak_days }}</p>
+                <p class="mt-2 text-sm text-slate-300">Consecutive recovery days with logged activity.</p>
+            </article>
+        </div>
+
+        <div class="grid gap-6 lg:grid-cols-2">
+            <article class="glass-card rounded-[30px] p-5" data-reveal>
+                <div class="mb-4 flex items-center justify-between">
+                    <div>
+                        <p class="text-xs uppercase tracking-[0.25em] text-cyan-200/60">Realtime trend</p>
+                        <h3 class="mt-1 text-xl font-semibold text-white">Form Score Timeline</h3>
+                    </div>
+                    <span class="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-300">last 14 days</span>
+                </div>
+                <div class="h-72">
+                    <canvas id="scoreTimelineChart"></canvas>
+                </div>
+            </article>
+
+            <article class="glass-card rounded-[30px] p-5" data-reveal>
+                <div class="mb-4 flex items-center justify-between">
+                    <div>
+                        <p class="text-xs uppercase tracking-[0.25em] text-cyan-200/60">Movement mix</p>
+                        <h3 class="mt-1 text-xl font-semibold text-white">Exercise Distribution</h3>
+                    </div>
+                    <span class="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-300">volume + quality</span>
+                </div>
+                <div class="h-72">
+                    <canvas id="exerciseMixChart"></canvas>
+                </div>
+            </article>
+        </div>
+
+        <div class="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+            <article class="glass-card rounded-[30px] p-5" data-reveal>
+                <div class="mb-4">
+                    <p class="text-xs uppercase tracking-[0.25em] text-cyan-200/60">Weekly performance</p>
+                    <h3 class="mt-1 text-xl font-semibold text-white">Accuracy vs Stability vs Fatigue</h3>
+                </div>
+                <div class="h-80">
+                    <canvas id="weeklyTrendsChart"></canvas>
+                </div>
+            </article>
+
+            <article class="glass-card rounded-[30px] p-5" data-reveal>
+                <div class="mb-4">
+                    <p class="text-xs uppercase tracking-[0.25em] text-cyan-200/60">Problem areas</p>
+                    <h3 class="mt-1 text-xl font-semibold text-white">Weakness Heatmap</h3>
+                </div>
+                <div class="space-y-4">
+                    {% for row in weakness_heatmap %}
+                        <div class="rounded-[22px] border border-white/10 bg-white/5 p-4">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm font-semibold text-white">{{ row.joint }}</p>
+                                    <p class="mt-1 text-xs uppercase tracking-[0.18em] text-slate-400">{{ row.severity }}</p>
+                                </div>
+                                <div class="heat-dot {{ row.severity }} h-4 w-4 rounded-full"></div>
+                            </div>
+                            <div class="mt-4 h-2 overflow-hidden rounded-full bg-white/10">
+                                <div class="h-full rounded-full bg-gradient-to-r from-mint to-cyan-200" style="width: {{ row.score }}%"></div>
+                            </div>
+                            <div class="mt-3 flex items-center justify-between text-sm text-slate-300">
+                                <span>Score {{ row.score }}</span>
+                                <span>Trend {{ row.trend }}</span>
+                            </div>
+                        </div>
+                    {% empty %}
+                        <p class="text-sm text-slate-300">No weakness hotspots detected yet.</p>
+                    {% endfor %}
+                </div>
+            </article>
+        </div>
+
+        <article class="glass-card rounded-[30px] p-5" data-reveal>
+            <div class="mb-4 flex items-center justify-between">
+                <div>
+                    <p class="text-xs uppercase tracking-[0.25em] text-cyan-200/60">Recent work</p>
+                    <h3 class="mt-1 text-xl font-semibold text-white">Latest Exercise Blocks</h3>
+                </div>
+                <a href="{% url 'sessions:session_list' %}" class="text-sm font-semibold text-cyan-200 hover:text-white">View sessions</a>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full text-left text-sm">
+                    <thead class="text-xs uppercase tracking-[0.2em] text-slate-400">
+                        <tr>
+                            <th class="py-3 pr-4">Date</th>
+                            <th class="py-3 pr-4">Exercise</th>
+                            <th class="py-3 pr-4">Score</th>
+                            <th class="py-3 pr-4">Stability</th>
+                            <th class="py-3 pr-4">Fatigue</th>
+                            <th class="py-3">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-white/5 text-slate-200">
+                        {% for session in recent_sessions %}
+                            <tr>
+                                <td class="py-3 pr-4">{{ session.date }}</td>
+                                <td class="py-3 pr-4">{{ session.exercise }}</td>
+                                <td class="py-3 pr-4">{{ session.score }}</td>
+                                <td class="py-3 pr-4">{{ session.stability }}</td>
+                                <td class="py-3 pr-4">{{ session.fatigue }}</td>
+                                <td class="py-3">
+                                    <span class="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold text-slate-100">{{ session.status }}</span>
+                                </td>
+                            </tr>
+                        {% empty %}
+                            <tr><td colspan="6" class="py-6 text-center text-slate-400">No sessions recorded yet.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </article>
+    </div>
+
+    <aside class="space-y-6">
+        <section class="glass-card rounded-[30px] p-5" data-reveal>
+            <p class="text-xs uppercase tracking-[0.25em] text-cyan-200/60">Adaptive Planning</p>
+            <h2 class="mt-1 text-2xl font-semibold text-white">AI Recommendations</h2>
+            <div class="mt-4 space-y-4">
+                {% for insight in insights %}
+                    <div class="rounded-[22px] border border-white/10 bg-white/5 p-4 text-sm leading-6 text-slate-300">{{ insight }}</div>
+                {% empty %}
+                    <div class="rounded-[22px] border border-white/10 bg-white/5 p-4 text-sm leading-6 text-slate-300">Recommendations will appear as sessions are completed.</div>
+                {% endfor %}
+            </div>
+        </section>
+
+        <section class="glass-card rounded-[30px] p-5" data-reveal>
+            <p class="text-xs uppercase tracking-[0.25em] text-cyan-200/60">Quick Stats</p>
+            <div class="mt-4 grid gap-4">
+                <div class="rounded-[22px] border border-white/10 bg-white/5 p-4">
+                    <div class="text-xs uppercase tracking-[0.2em] text-slate-400">Accuracy Rate</div>
+                    <div class="mt-2 text-3xl font-semibold text-white">{{ summary.accuracy_rate }}%</div>
+                </div>
+                <div class="rounded-[22px] border border-white/10 bg-white/5 p-4">
+                    <div class="text-xs uppercase tracking-[0.2em] text-slate-400">Active Plans</div>
+                    <div class="mt-2 text-3xl font-semibold text-white">{{ summary.active_plans }}</div>
+                </div>
+            </div>
+        </section>
+    </aside>
+</section>
+
+{{ score_timeline|json_script:"score-timeline-data" }}
+{{ exercise_mix|json_script:"exercise-mix-data" }}
+{{ weekly_trends|json_script:"weekly-trends-data" }}
+{% endblock %}
+
+{% block body_scripts %}
+<script src="{% static 'dashboard/js/dashboard.js' %}"></script>
+{% endblock %}

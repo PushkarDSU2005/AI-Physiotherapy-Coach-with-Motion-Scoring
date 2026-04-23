@@ -1,0 +1,9 @@
+{% extends "base_premium.html" %}
+{% block title %}Login Required | Physio AI{% endblock %}
+{% block content %}
+<section class="glass-card rounded-[30px] p-10 text-center" data-reveal>
+    <h1 class="text-3xl font-semibold text-white">Login Required</h1>
+    <p class="mt-4 text-slate-300">You need to sign in before viewing this session page.</p>
+    <a href="/admin/login/" class="mt-6 inline-flex rounded-full border border-cyan-300/20 bg-cyan-300/10 px-5 py-3 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-300/20">Go to login</a>
+</section>
+{% endblock %}

@@ -1,0 +1,17 @@
+{% extends "base_premium.html" %}
+{% block title %}Pose Analysis | Physio AI{% endblock %}
+{% block content %}
+<header class="glass-card mb-6 rounded-[30px] px-6 py-5" data-reveal><p class="mb-2 text-xs font-semibold uppercase tracking-[0.35em] text-cyan-200/65">Pose Analysis</p><h1 class="text-3xl font-semibold tracking-tight text-white sm:text-4xl">Frame-by-Frame Analysis</h1><p class="mt-2 text-sm text-slate-300">{{ total_frames }} frames captured for this exercise.</p></header>
+<section class="grid gap-4">
+    {% for analysis in analyses %}
+        <article class="glass-card rounded-[24px] p-5" data-reveal>
+            <div class="flex flex-wrap items-center justify-between gap-4">
+                <div><h2 class="text-xl font-semibold text-white">Frame {{ analysis.frame_number }}</h2><p class="mt-1 text-sm text-slate-300">Score {{ analysis.form_score }} · Confidence {{ analysis.confidence_level }}</p></div>
+                <div class="text-sm text-slate-300">{{ analysis.timestamp }}</div>
+            </div>
+        </article>
+    {% empty %}
+        <div class="glass-card rounded-[30px] p-10 text-center" data-reveal><h2 class="text-2xl font-semibold text-white">No analysis frames found</h2><p class="mt-4 text-slate-300">Capture data will appear once pose processing starts.</p></div>
+    {% endfor %}
+</section>
+{% endblock %}

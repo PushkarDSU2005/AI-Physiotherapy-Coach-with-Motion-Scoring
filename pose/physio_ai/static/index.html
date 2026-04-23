@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Physio AI - Pose Detection</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            padding: 30px;
+        }
+
+        @media (max-width: 768px) {
+            .content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .video-section {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .video-container {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 4/3;
+            background: #000;
+            border-radius: 15px;
+            overflow: hidden;
+        }
+
+        #video {
+            display: none;
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            transform: scaleX(-1);
+        }
+
+        #canvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            flex: 1;
+            padding: 12px 20px;
+            font-size: 1em;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            background: #e0e0e0;
+        }
+
+        .stats-section {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .stats-card {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+        }
+
+        .stats-card h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .stat-item:last-child {
+            border-bottom: none;
+        }
+
+        .stat-label {
+            color: #666;
+            font-weight: 500;
+        }
+
+        .stat-value {
+            color: #333;
+            font-weight: 600;
+            font-family: 'Courier New', monospace;
+        }
+
+        .angles-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .angle-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #e0e0e0;
+            font-size: 0.95em;
+        }
+
+        .angle-item:last-child {
+            border-bottom: none;
+        }
+
+        .angle-name {
+            color: #666;
+            font-weight: 500;
+        }
+
+        .angle-value {
+            color: #667eea;
+            font-weight: 600;
+            font-family: 'Courier New', monospace;
+            min-width: 60px;
+            text-align: right;
+        }
+
+        .status {
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .status.loading {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .landmarks-display {
+            font-size: 0.85em;
+            margin-top: 10px;
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+        }
+
+        .landmark-item {
+            padding: 5px 0;
+            font-family: 'Courier New', monospace;
+        }
+
+        .footer {
+            background: #f8f9fa;
+            padding: 20px 30px;
+            text-align: center;
+            color: #666;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .api-config {
+            background: #f0f4ff;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+        }
+
+        .api-config label {
+            display: block;
+            margin-bottom: 5px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        .api-config input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+
+        .performance-metrics {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .metric-box {
+            background: white;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+            text-align: center;
+        }
+
+        .metric-label {
+            font-size: 0.8em;
+            color: #666;
+        }
+
+        .metric-value {
+            font-size: 1.3em;
+            font-weight: 600;
+            color: #667eea;
+            font-family: 'Courier New', monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 Physio AI - Pose Detection</h1>
+            <p>Real-time pose detection and joint angle calculation using MediaPipe</p>
+        </div>
+
+        <div class="content">
+            <!-- Video Section -->
+            <div class="video-section">
+                <div class="video-container">
+                    <video id="video"></video>
+                    <canvas id="canvas"></canvas>
+                </div>
+
+                <div class="controls">
+                    <button class="btn-primary" id="startBtn" onclick="startCamera()">Start Camera</button>
+                    <button class="btn-primary" id="stopBtn" onclick="stopCamera()" disabled>Stop Camera</button>
+                    <button class="btn-secondary" id="recordBtn" onclick="recordSession()" disabled>Record Session</button>
+                </div>
+
+                <div id="status" class="status info">Ready to start</div>
+
+                <div class="api-config">
+                    <label>API Endpoint:</label>
+                    <input type="text" id="apiUrl" value="http://localhost:8000/api/score/calculate/" placeholder="Django API URL">
+                </div>
+            </div>
+
+            <!-- Stats Section -->
+            <div class="stats-section">
+                <div class="stats-card">
+                    <h3>📊 Performance</h3>
+                    <div class="performance-metrics">
+                        <div class="metric-box">
+                            <div class="metric-label">FPS</div>
+                            <div class="metric-value" id="fps">0</div>
+                        </div>
+                        <div class="metric-box">
+                            <div class="metric-label">Landmarks</div>
+                            <div class="metric-value" id="landmarkCount">0</div>
+                        </div>
+                        <div class="metric-box">
+                            <div class="metric-label">Confidence</div>
+                            <div class="metric-value" id="confidence">0%</div>
+                        </div>
+                        <div class="metric-box">
+                            <div class="metric-label">Process Time</div>
+                            <div class="metric-value" id="procTime">0ms</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stats-card">
+                    <h3>📐 Joint Angles</h3>
+                    <div class="angles-list" id="anglesList">
+                        <div style="padding: 20px; text-align: center; color: #999;">
+                            Start camera to see angles
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stats-card">
+                    <h3>🎬 Landmarks</h3>
+                    <div class="landmarks-display" id="landmarksDisplay">
+                        <div style="padding: 10px; text-align: center; color: #999;">
+                            No landmarks detected
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>💡 Make sure your webcam is enabled and you're in good lighting. Pose detection works best in 720p or higher.</p>
+        </div>
+    </div>
+
+    <!-- MediaPipe Pose Library -->
+    <script async src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+    <script async src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
+    <script async src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js"></script>
+
+    <script>
+        // ============================================================
+        // CONFIGURATION
+        // ============================================================
+        const CONFIG = {
+            landmarkCount: 33,
+            videoWidth: 640,
+            videoHeight: 480,
+            fps: 0,
+            frameCount: 0,
+            lastTime: Date.now(),
+            recordingSession: [],
+            isRecording: false,
+            poseHistory: []
+        };
+
+        // ============================================================
+        // JOINT ANGLE CALCULATIONS
+        // ============================================================
+
+        /**
+         * Calculate angle between three points
+         * @param {Object} p1 - First point {x, y}
+         * @param {Object} p2 - Vertex point {x, y}
+         * @param {Object} p3 - Third point {x, y}
+         * @returns {number} Angle in degrees
+         */
+        function calculateAngle(p1, p2, p3) {
+            // Vector from p2 to p1
+            const v1 = {
+                x: p1.x - p2.x,
+                y: p1.y - p2.y
+            };
+
+            // Vector from p2 to p3
+            const v2 = {
+                x: p3.x - p2.x,
+                y: p3.y - p2.y
+            };
+
+            // Dot product
+            const dotProduct = v1.x * v2.x + v1.y * v2.y;
+
+            // Magnitudes
+            const mag1 = Math.sqrt(v1.x * v1.x + v1.y * v1.y);
+            const mag2 = Math.sqrt(v2.x * v2.x + v2.y * v2.y);
+
+            // Avoid division by zero
+            if (mag1 === 0 || mag2 === 0) return 0;
+
+            // Cosine of angle
+            const cosAngle = dotProduct / (mag1 * mag2);
+
+            // Clamp to [-1, 1] to handle floating point errors
+            const clampedCos = Math.max(-1, Math.min(1, cosAngle));
+
+            // Calculate angle in radians and convert to degrees
+            const angle = Math.acos(clampedCos) * (180 / Math.PI);
+
+            return Math.round(angle * 10) / 10; // Round to 1 decimal
+        }
+
+        /**
+         * Extract joint angles from pose landmarks
+         * @param {Array} landmarks - MediaPipe pose landmarks
+         * @returns {Object} Dictionary of joint angles
+         */
+        function extractJointAngles(landmarks) {
+            const angles = {};
+
+            // Define joints to track (MediaPipe landmark indices)
+            const joints = {
+                // Shoulders
+                'right_shoulder': { p1: 12, vertex: 14, p3: 16 }, // Right shoulder->elbow->wrist
+                'left_shoulder': { p1: 11, vertex: 13, p3: 15 },  // Left shoulder->elbow->wrist
+
+                // Elbows
+                'right_elbow': { p1: 12, vertex: 14, p3: 16 },    // Right shoulder->elbow->wrist
+                'left_elbow': { p1: 11, vertex: 13, p3: 15 },     // Left shoulder->elbow->wrist
+
+                // Hips
+                'right_hip': { p1: 24, vertex: 26, p3: 28 },      // Right hip->knee->ankle
+                'left_hip': { p1: 23, vertex: 25, p3: 27 },       // Left hip->knee->ankle
+
+                // Knees
+                'right_knee': { p1: 24, vertex: 26, p3: 28 },     // Right hip->knee->ankle
+                'left_knee': { p1: 23, vertex: 25, p3: 27 },      // Left hip->knee->ankle
+
+                // Wrists
+                'right_wrist': { p1: 14, vertex: 16, p3: 18 },    // Right elbow->wrist->index
+                'left_wrist': { p1: 13, vertex: 15, p3: 17 },     // Left elbow->wrist->index
+
+                // Ankles
+                'right_ankle': { p1: 26, vertex: 28, p3: 30 },    // Right knee->ankle->foot_index
+                'left_ankle': { p1: 25, vertex: 27, p3: 29 },     // Left knee->ankle->foot_index
+
+                // Torso (spine angle)
+                'spine': { p1: 11, vertex: 23, p3: 25 },          // Left shoulder->left hip->right hip
+                'torso_lean': { p1: 23, vertex: 11, p3: 12 }      // Left hip->left shoulder->right shoulder
+            };
+
+            // Calculate each joint angle
+            for (const [jointName, indices] of Object.entries(joints)) {
+                const p1 = landmarks[indices.p1];
+                const p2 = landmarks[indices.vertex];
+                const p3 = landmarks[indices.p3];
+
+                if (p1 && p2 && p3) {
+                    angles[jointName] = calculateAngle(p1, p2, p3);
+                }
+            }
+
+            return angles;
+        }
+
+        /**
+         * Get confidence score for pose (average visibility)
+         * @param {Array} landmarks - MediaPipe pose landmarks
+         * @returns {number} Confidence 0-100
+         */
+        function getConfidenceScore(landmarks) {
+            let totalVisibility = 0;
+            let count = 0;
+
+            for (const landmark of landmarks) {
+                if (landmark && landmark.visibility) {
+                    totalVisibility += landmark.visibility;
+                    count++;
+                }
+            }
+
+            return count > 0 ? Math.round((totalVisibility / count) * 100) : 0;
+        }
+
+        /**
+         * Format landmarks for display
+         * @param {Array} landmarks - MediaPipe pose landmarks
+         * @returns {string} Formatted HTML
+         */
+        function formatLandmarks(landmarks) {
+            const keyLandmarks = [
+                { name: 'Nose', idx: 0 },
+                { name: 'L Shoulder', idx: 11 },
+                { name: 'R Shoulder', idx: 12 },
+                { name: 'L Elbow', idx: 13 },
+                { name: 'R Elbow', idx: 14 },
+                { name: 'L Wrist', idx: 15 },
+                { name: 'R Wrist', idx: 16 },
+                { name: 'L Hip', idx: 23 },
+                { name: 'R Hip', idx: 24 },
+                { name: 'L Knee', idx: 25 },
+                { name: 'R Knee', idx: 26 }
+            ];
+
+            let html = '';
+            for (const landmark of keyLandmarks) {
+                const l = landmarks[landmark.idx];
+                if (l) {
+                    const visibility = Math.round(l.visibility * 100);
+                    html += `<div class="landmark-item">${landmark.name}: (${Math.round(l.x)}, ${Math.round(l.y)}) ${visibility}%</div>`;
+                }
+            }
+
+            return html || '<div style="color: #999;">No landmarks detected</div>';
+        }
+
+        // ============================================================
+        // MEDIAPIPE INITIALIZATION
+        // ============================================================
+
+        const videoElement = document.getElementById('video');
+        const canvasElement = document.getElementById('canvas');
+        const canvasCtx = canvasElement.getContext('2d');
+
+        const pose = new Pose({
+            locateFile: (file) => {
+                return `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`;
+            }
+        });
+
+        pose.setOptions({
+            modelComplexity: 1,
+            smoothLandmarks: true,
+            enableSegmentation: false,
+            smoothSegmentation: true,
+            minDetectionConfidence: 0.5,
+            minTrackingConfidence: 0.5
+        });
+
+        // ============================================================
+        // POSE DETECTION & RENDERING
+        // ============================================================
+
+        /**
+         * Handle pose detection results
+         */
+        pose.onResults(onResults);
+
+        function onResults(results) {
+            const startTime = Date.now();
+
+            // Update canvas size
+            canvasElement.width = videoElement.videoWidth;
+            canvasElement.height = videoElement.videoHeight;
+
+            // Clear canvas
+            canvasCtx.save();
+            canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+
+            // Draw flipped video
+            canvasCtx.scale(-1, 0);
+            canvasCtx.drawImage(results.image, -canvasElement.width, 0, canvasElement.width, canvasElement.height);
+            canvasCtx.scale(-1, 0);
+
+            // Draw pose landmarks and connections
+            drawConnectors(canvasCtx, results.poseLandmarks, POSE_CONNECTIONS, { color: '#00FF00', lineWidth: 2 });
+            drawLandmarks(canvasCtx, results.poseLandmarks, { color: '#FF0000', fillColor: '#00FF00', radius: 3 });
+
+            canvasCtx.restore();
+
+            // Process landmarks
+            if (results.poseLandmarks && results.poseLandmarks.length > 0) {
+                const angles = extractJointAngles(results.poseLandmarks);
+                const confidence = getConfidenceScore(results.poseLandmarks);
+
+                // Update UI
+                updateAngles(angles);
+                updateLandmarks(results.poseLandmarks);
+                updatePerformanceMetrics(confidence, results.poseLandmarks.length, Date.now() - startTime);
+
+                // Store if recording
+                if (CONFIG.isRecording) {
+                    CONFIG.recordingSession.push({
+                        timestamp: Date.now(),
+                        angles: angles,
+                        confidence: confidence
+                    });
+                }
+            } else {
+                updateStatus('No pose detected', 'error');
+            }
+
+            // Calculate FPS
+            calculateFPS();
+        }
+
+        /**
+         * Update angles display
+         */
+        function updateAngles(angles) {
+            const anglesList = document.getElementById('anglesList');
+            let html = '';
+
+            for (const [jointName, angle] of Object.entries(angles)) {
+                const displayName = jointName.replace(/_/g, ' ').toUpperCase();
+                html += `
+                    <div class="angle-item">
+                        <span class="angle-name">${displayName}</span>
+                        <span class="angle-value">${angle}°</span>
+                    </div>
+                `;
+            }
+
+            anglesList.innerHTML = html;
+            CONFIG.poseHistory.push(angles);
+        }
+
+        /**
+         * Update landmarks display
+         */
+        function updateLandmarks(landmarks) {
+            const landmarksDisplay = document.getElementById('landmarksDisplay');
+            landmarksDisplay.innerHTML = formatLandmarks(landmarks);
+        }
+
+        /**
+         * Update performance metrics
+         */
+        function updatePerformanceMetrics(confidence, landmarkCount, procTime) {
+            document.getElementById('confidence').textContent = confidence + '%';
+            document.getElementById('landmarkCount').textContent = landmarkCount;
+            document.getElementById('procTime').textContent = procTime + 'ms';
+        }
+
+        /**
+         * Calculate FPS
+         */
+        function calculateFPS() {
+            CONFIG.frameCount++;
+            const now = Date.now();
+            const elapsed = now - CONFIG.lastTime;
+
+            if (elapsed > 1000) {
+                CONFIG.fps = Math.round(CONFIG.frameCount * 1000 / elapsed);
+                document.getElementById('fps').textContent = CONFIG.fps;
+                CONFIG.frameCount = 0;
+                CONFIG.lastTime = now;
+            }
+        }
+
+        // ============================================================
+        // CAMERA CONTROL
+        // ============================================================
+
+        /**
+         * Start webcam
+         */
+        async function startCamera() {
+            try {
+                updateStatus('Starting camera...', 'loading');
+
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        width: { ideal: CONFIG.videoWidth },
+                        height: { ideal: CONFIG.videoHeight }
+                    }
+                });
+
+                videoElement.srcObject = stream;
+
+                videoElement.onloadedmetadata = () => {
+                    videoElement.play();
+                    const camera = new Camera(videoElement, {
+                        onFrame: async () => {
+                            await pose.send({ image: videoElement });
+                        },
+                        width: CONFIG.videoWidth,
+                        height: CONFIG.videoHeight
+                    });
+                    camera.start();
+
+                    document.getElementById('startBtn').disabled = true;
+                    document.getElementById('stopBtn').disabled = false;
+                    document.getElementById('recordBtn').disabled = false;
+
+                    updateStatus('Camera active - detecting pose', 'success');
+                };
+            } catch (error) {
+                updateStatus(`Camera error: ${error.message}`, 'error');
+                console.error('Camera error:', error);
+            }
+        }
+
+        /**
+         * Stop webcam
+         */
+        function stopCamera() {
+            const stream = videoElement.srcObject;
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
+
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('stopBtn').disabled = true;
+            document.getElementById('recordBtn').disabled = true;
+            CONFIG.isRecording = false;
+
+            updateStatus('Camera stopped', 'info');
+        }
+
+        // ============================================================
+        // RECORDING & API
+        // ============================================================
+
+        /**
+         * Record session and send to API
+         */
+        function recordSession() {
+            if (!CONFIG.isRecording) {
+                CONFIG.isRecording = true;
+                CONFIG.recordingSession = [];
+                document.getElementById('recordBtn').textContent = 'Stop Recording';
+                updateStatus('Recording... collecting pose data', 'loading');
+            } else {
+                CONFIG.isRecording = false;
+                document.getElementById('recordBtn').textContent = 'Record Session';
+                sendToAPI();
+            }
+        }
+
+        /**
+         * Send recorded session to Django API
+         */
+        async function sendToAPI() {
+            if (CONFIG.recordingSession.length === 0) {
+                updateStatus('No data recorded', 'error');
+                return;
+            }
+
+            try {
+                updateStatus('Sending to API...', 'loading');
+
+                const apiUrl = document.getElementById('apiUrl').value;
+                const payload = {
+                    exercise_id: 1, // Can be made dynamic
+                    frames: CONFIG.recordingSession,
+                    timestamp: new Date().toISOString()
+                };
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API error: ${response.status}`);
+                }
+
+                const result = await response.json();
+                updateStatus(`✅ Score received: ${result.overall_score || 'N/A'}`, 'success');
+                console.log('API Response:', result);
+
+                // Display feedback
+                if (result.feedback) {
+                    alert(`Score: ${result.overall_score}/100\n\n${result.summary || ''}\n\n${result.recommendations?.join('\n') || ''}`);
+                }
+            } catch (error) {
+                updateStatus(`API error: ${error.message}`, 'error');
+                console.error('API error:', error);
+            }
+        }
+
+        // ============================================================
+        // UI UTILITIES
+        // ============================================================
+
+        /**
+         * Update status message
+         */
+        function updateStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = message;
+            statusDiv.className = `status ${type}`;
+        }
+
+        // ============================================================
+        // INITIALIZATION
+        // ============================================================
+
+        updateStatus('Ready to start', 'info');
+    </script>
+</body>
+</html>

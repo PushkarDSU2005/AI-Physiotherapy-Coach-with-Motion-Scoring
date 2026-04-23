@@ -1,0 +1,16 @@
+{% extends "base_premium.html" %}
+{% block title %}Reports | Physio AI{% endblock %}
+{% block content %}
+<header class="glass-card mb-6 rounded-[30px] px-6 py-5" data-reveal><p class="mb-2 text-xs font-semibold uppercase tracking-[0.35em] text-cyan-200/65">Reports</p><h1 class="text-3xl font-semibold tracking-tight text-white sm:text-4xl">Generated Reports</h1></header>
+<section class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+    {% for report in reports %}
+        <article class="glass-card rounded-[28px] p-5" data-reveal>
+            <h2 class="text-xl font-semibold text-white">{{ report.title }}</h2>
+            <p class="mt-2 text-sm text-slate-300">{{ report.report_type }} · {{ report.start_date }} to {{ report.end_date }}</p>
+            <a href="/analytics/reports/{{ report.id }}/" class="mt-5 inline-flex rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-2 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-300/20">Open report</a>
+        </article>
+    {% empty %}
+        <div class="glass-card rounded-[30px] p-10 text-center" data-reveal><h2 class="text-2xl font-semibold text-white">No reports yet</h2><p class="mt-4 text-slate-300">Generate a report to see it here.</p></div>
+    {% endfor %}
+</section>
+{% endblock %}
