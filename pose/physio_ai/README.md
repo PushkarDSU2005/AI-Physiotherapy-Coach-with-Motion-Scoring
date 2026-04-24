@@ -2,6 +2,18 @@
 
 A comprehensive Django project for physiotherapy AI with pose detection and exercise tracking.
 
+## Application Screenshots
+
+<div align="center">
+  <img src="../assets/1.png" alt="Landing page" width="400"/><br><b>Landing page</b><br><br>
+  <img src="../assets/2.png" alt="Dashboard" width="400"/><br><b>Dashboard</b><br><br>
+  <img src="../assets/3.png" alt="Analytics" width="400"/><br><b>Analytics</b><br><br>
+  <img src="../assets/4.png" alt="Therapy Plan" width="400"/><br><b>Therapy Plan</b><br><br>
+  <img src="../assets/5.png" alt="Training sessions" width="400"/><br><b>Training sessions</b><br><br>
+  <img src="../assets/6.png" alt="Live posture tracking" width="400"/><br><b>Live posture tracking</b>
+</div>
+
+
 ## Project Structure
 
 ```
